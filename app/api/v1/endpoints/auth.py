@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Any
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
@@ -13,6 +13,11 @@ from app.db.models.auth import RefreshToken
 from app.schemas.user import UserCreate, UserResponse
 from app.schemas.token import Token, RefreshTokenRequest
 import jwt
+from datetime import timedelta
+import random
+import string
+from pydantic import BaseModel
+from app.core.email import send_verification_email
 
 router = APIRouter()
 
@@ -20,6 +25,7 @@ router = APIRouter()
 @router.post("/register", response_model=UserResponse)
 async def register(
     user_in: UserCreate,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db)
 ) -> Any:
     # Check if user exists
@@ -34,16 +40,54 @@ async def register(
             detail="The user with this username or email already exists in the system.",
         )
     
+    otp = ''.join(random.choices(string.digits, k=6))
+    
     user = User(
         email=user_in.email,
         username=user_in.username,
         hashed_password=get_password_hash(user_in.password),
         display_name=user_in.display_name,
+        verification_otp=otp,
+        verification_otp_expires_at=datetime.now().replace(tzinfo=None) + timedelta(minutes=10)
     )
     db.add(user)
     await db.commit()
     await db.refresh(user)
+    
+    # Send email in background
+    background_tasks.add_task(send_verification_email, user.email, otp)
+    
     return user
+
+class VerifyOTPRequest(BaseModel):
+    email: str
+    otp: str
+
+@router.post("/verify-otp")
+async def verify_otp(
+    request: VerifyOTPRequest,
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    result = await db.execute(select(User).filter(User.email == request.email))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    if user.is_verified:
+        return {"message": "User already verified"}
+        
+    if user.verification_otp != request.otp:
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+        
+    if not user.verification_otp_expires_at or user.verification_otp_expires_at < datetime.now().replace(tzinfo=None):
+        raise HTTPException(status_code=400, detail="OTP expired")
+        
+    user.is_verified = True
+    user.verification_otp = None
+    user.verification_otp_expires_at = None
+    
+    await db.commit()
+    return {"message": "Account verified successfully"}
 
 
 @router.post("/login", response_model=Token)

@@ -1,4 +1,5 @@
 from typing import Optional
+from datetime import datetime
 from sqlalchemy import String, Boolean, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -21,3 +22,7 @@ class User(Base):
     # Flags and settings
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    
+    # OTP Verification
+    verification_otp: Mapped[Optional[str]] = mapped_column(String(6))
+    verification_otp_expires_at: Mapped[Optional[datetime]] = mapped_column()

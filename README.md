@@ -1,6 +1,6 @@
-# Pursuit Backend
+# Essor Nova Backend
 
-Backend for the Pursuit application.
+Backend for the Essor Nova application.
 
 ## Setup
 
