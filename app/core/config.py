@@ -14,10 +14,13 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    # Email
-    BREVO_API_KEY: Optional[str] = None
-    SENDER_EMAIL: str = "noreply@essornova.com"
-    SENDER_NAME: str = "Essor Nova App"
+    # Email / SMTP
+    MAIL_FROM: str = "noreply@essornova.com"
+    MAIL_HOST: Optional[str] = None
+    MAIL_PASS: Optional[str] = None
+    MAIL_PORT: int = 587
+    MAIL_SECURE: bool = False
+    MAIL_USER: Optional[str] = None
 
     # Database
     DATABASE_URL: str
