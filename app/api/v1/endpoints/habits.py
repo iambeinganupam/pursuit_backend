@@ -25,7 +25,7 @@ async def get_habits(
 ) -> Any:
     result = await db.execute(
         select(Habit)
-        .options(selectinload(Habit.schedule))
+        .options(selectinload(Habit.schedule), selectinload(Habit.completions))
         .filter(Habit.user_id == current_user.id)
     )
     return result.scalars().all()
@@ -51,7 +51,7 @@ async def create_habit(
     # Reload with schedule
     result = await db.execute(
         select(Habit)
-        .options(selectinload(Habit.schedule))
+        .options(selectinload(Habit.schedule), selectinload(Habit.completions))
         .filter(Habit.id == habit.id)
     )
     return result.scalars().first()
@@ -65,7 +65,7 @@ async def get_habit(
 ) -> Any:
     result = await db.execute(
         select(Habit)
-        .options(selectinload(Habit.schedule))
+        .options(selectinload(Habit.schedule), selectinload(Habit.completions))
         .filter(Habit.id == habit_id, Habit.user_id == current_user.id)
     )
     habit = result.scalars().first()

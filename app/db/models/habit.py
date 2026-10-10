@@ -27,6 +27,14 @@ class Habit(Base):
     schedule: Mapped["HabitSchedule"] = relationship(back_populates="habit", uselist=False, cascade="all, delete-orphan")
     completions: Mapped[list["HabitCompletion"]] = relationship(back_populates="habit", cascade="all, delete-orphan")
 
+    @property
+    def is_completed_today(self) -> bool:
+        today = date.today()
+        for completion in self.completions:
+            if completion.completion_date == today:
+                return True
+        return False
+
 
 class HabitSchedule(Base):
     __tablename__ = "habit_schedules"

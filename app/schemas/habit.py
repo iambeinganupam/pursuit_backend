@@ -46,6 +46,7 @@ class HabitResponse(HabitBase):
     is_archived: bool
     created_at: datetime
     updated_at: datetime
+    is_completed_today: bool = False
     schedule: HabitScheduleResponse
 
     model_config = {"from_attributes": True}
